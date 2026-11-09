@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Branch Ranking</title>
+<style>
+:root{
+  --paper:#f5f4f1; --card:#fff; --ink:#191818; --mut:#73716d; --line:#e4e2dd;
+  --head:#f0eeea; --zebra:#faf9f7;
+  --s:#1a7f5a; --m:#8a6d12; --w:#b23f27;
+  --r1:#b8860b; --r2:#7f7f86; --r3:#a2673a;
+  --acc:#1f4b6e;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131315; --card:#1c1c1f; --ink:#e9e6e1; --mut:#95928d; --line:#2c2c31;
+    --head:#232327; --zebra:#1f1f23;
+    --s:#4cb98a; --m:#c9a235; --w:#e0775c;
+    --r1:#e0ae3c; --r2:#a8a8b0; --r3:#c08552;
+    --acc:#7fb2d6;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131315; --card:#1c1c1f; --ink:#e9e6e1; --mut:#95928d; --line:#2c2c31;
+  --head:#232327; --zebra:#1f1f23;
+  --s:#4cb98a; --m:#c9a235; --w:#e0775c;
+  --r1:#e0ae3c; --r2:#a8a8b0; --r3:#c08552;
+  --acc:#7fb2d6;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+header{
+  position:sticky; top:0; z-index:5; background:var(--paper);
+  border-bottom:1px solid var(--line); padding:10px 16px 0;
+}
+.hd{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+h1{font-size:17px; font-weight:650; letter-spacing:-.01em; margin:0}
+.as{color:var(--mut); font-size:12px; margin-left:auto}
+nav{display:flex; gap:4px; margin:8px -4px 0}
+.tab{
+  font:inherit; font-size:13px; font-weight:550; color:var(--mut);
+  text-decoration:none; padding:7px 11px; border-radius:7px 7px 0 0;
+  border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:0;
+  border-left:0; border-right:0;
+}
+.tab.on{color:var(--ink); border-bottom-color:var(--acc)}
+.dates{
+  display:flex; align-items:center; gap:6px; padding:8px 16px 0;
+  color:var(--mut); font-size:12px;
+}
+/* display:flex outranks the user-agent's [hidden]{display:none}, so the row has to
+   hide itself explicitly or it shows under every period. */
+.dates[hidden]{display:none}
+.dates input{
+  font:inherit; font-size:12px; color:var(--ink); background:var(--card);
+  border:1px solid var(--line); border-radius:6px; padding:5px 7px; min-height:32px;
+}
+.chips{
+  display:flex; gap:6px; overflow-x:auto; padding:10px 16px 0;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.chips::-webkit-scrollbar{display:none}
+.chips a{
+  flex:0 0 auto; font-size:12px; color:var(--mut); text-decoration:none;
+  border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:var(--card);
+}
+main{padding:4px 16px 40px; max-width:900px; margin:0 auto}
+/* The header is sticky, so a chip jump would otherwise land the group's name
+   underneath it and the reader would arrive at a table with no heading. */
+section{margin:22px 0 0; scroll-margin-top:92px}
+h2{font-size:14px; font-weight:650; letter-spacing:.02em; text-transform:uppercase; margin:0}
+.sum{color:var(--mut); font-size:12px; margin:3px 0 8px}
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--card)}
+table{width:100%; border-collapse:collapse; font-size:14px}
+thead th{
+  background:var(--head); color:var(--mut); font-size:11px; font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; text-align:right;
+  padding:0 10px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+thead th.rk,thead th.br{padding:7px 10px}
+/* The header cell IS the control. A full-height button keeps the tap target the size of
+   the cell on a phone, where a 11px label would otherwise be a very small thing to hit. */
+.sb{
+  font:inherit; color:inherit; background:none; border:0; cursor:pointer;
+  padding:7px 0; width:100%; text-align:right; letter-spacing:inherit;
+  text-transform:inherit;
+}
+.sb:hover{color:var(--ink)}
+.sb::after{content:""; display:inline-block; width:9px}
+th.on .sb{color:var(--ink)}
+th.on .sb::after{content:"\25BE"; width:9px; text-align:right}
+td{padding:8px 10px; border-bottom:1px solid var(--line); text-align:right}
+tbody tr:nth-child(even){background:var(--zebra)}
+tbody tr:last-child td{border-bottom:0}
+th.rk,td.rk{width:34px; text-align:left; color:var(--mut); font-size:13px}
+th.br,td.br{text-align:left; width:auto; font-weight:500}
+td.n{white-space:nowrap}
+td.mut{color:var(--mut)}
+.s{color:var(--s)} .m{color:var(--m)} .w{color:var(--w)}
+.r1{color:var(--r1); font-weight:700} .r2{color:var(--r2); font-weight:700}
+.r3{color:var(--r3); font-weight:700}
+/* The column the board is ranked by reads as the one being measured. */
+td.sorted{font-weight:650; color:var(--ink)}
+td.sorted.s{color:var(--s)} td.sorted.m{color:var(--m)} td.sorted.w{color:var(--w)}
+/* A reason appears only when something is actually blocked, and then in one line. */
+.msg{color:var(--mut); font-size:13px; padding:18px 16px; max-width:900px; margin:0 auto}
+.msg.bad{color:var(--w)}
+/* Every column stays on a phone. Hiding "24h *" there would take one of the four
+   rankings away from the people most likely to be reading this on a phone, so the room
+   comes out of padding and type size instead. */
+@media (max-width:430px){
+  main,header,.chips{padding-left:8px; padding-right:8px}
+  table{font-size:12.5px}
+  td{padding:7px 4px}
+  thead th{padding:0 4px; font-size:10px; letter-spacing:.02em}
+  thead th.rk,thead th.br{padding:7px 4px}
+  th.rk,td.rk{width:22px}
+  td.br{max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .sb::after,th.on .sb::after{width:7px}
+  /* A header is pressed often here, so give it a finger-sized target rather than the
+     height an 10px label would occupy on its own. */
+  .sb{padding:12px 0}
+}
+</style>
+</head>
+<body>
+<header>
+<div class="hd"><h1>Branch Ranking</h1><span class="as" id="as"></span></div>
+<nav>
+  <button class="tab on" data-p="24h">24 hours</button>
+  <button class="tab" data-p="7d">7 days</button>
+  <button class="tab" data-p="30d">30 days</button>
+  <button class="tab" data-p="custom">Dates</button>
+</nav>
+<div class="dates" id="dates" hidden>
+  <input type="date" id="d1" aria-label="From"><span>to</span>
+  <input type="date" id="d2" aria-label="To">
+</div>
+</header>
+<div class="chips" id="chips"></div>
+<main id="main"><p class="msg">Loading…</p></main>
+
+<script type="module">
+import {
+  customLabel,
+  customWindow,
+  DEFAULT_SORT,
+  mergeBoards,
+  myt,
+  PERIODS,
+  renderChips,
+  renderMain,
+  rollingWindow,
+  SORTS,
+} from "./board.js";
+
+const params = new URLSearchParams(location.search);
+
+/**
+ * This page knows nothing about whose board it is.
+ *
+ * Every source — which project to read and the key to read it with — arrives in the URL,
+ * so the published page carries no business name, no project id and no key, and the same
+ * file serves anyone. Each key authorises exactly one source; no source is given any way
+ * to reach another.
+ *
+ *   ?s1=<project>&k1=<key>&s2=<project>&k2=<key>
+ */
+const SOURCES = [1, 2, 3, 4]
+  .map((i) => ({ n: i, ref: params.get(`s${i}`), key: params.get(`k${i}`) }))
+  .filter((s) => s.ref && s.key);
+
+const mainEl = document.getElementById("main");
+const chipsEl = document.getElementById("chips");
+const asEl = document.getElementById("as");
+const datesEl = document.getElementById("dates");
+const d1 = document.getElementById("d1");
+const d2 = document.getElementById("d2");
+
+let board = null;
+// An unknown ?sort= or ?p= falls back rather than rendering an empty board.
+let sort = SORTS[params.get("sort")] ? params.get("sort") : DEFAULT_SORT;
+let periodKey = PERIODS[params.get("p")] || params.get("p") === "custom"
+  ? params.get("p")
+  : "24h";
+
+/** yyyy-mm-dd for a Malaysian calendar day, n days back from today. */
+function mytDate(daysAgo = 0) {
+  return new Date(Date.now() + 8 * 3600000 - daysAgo * 86400000).toISOString().slice(0, 10);
+}
+
+d1.value = params.get("from") || mytDate(29);
+d2.value = params.get("to") || mytDate(0);
+
+/** The window to ask every source for, and what to call it on screen. */
+function currentWindow() {
+  if (periodKey === "custom") {
+    return { ...customWindow(d1.value, d2.value), label: customLabel(d1.value, d2.value) };
+  }
+  const preset = PERIODS[periodKey] ?? PERIODS["24h"];
+  return { ...rollingWindow(preset.days), label: preset.label };
+}
+
+async function fetchSource(s, win) {
+  const url = `https://${s.ref}.supabase.co/functions/v1/board` +
+    `?k=${encodeURIComponent(s.key)}` +
+    `&from=${encodeURIComponent(win.from)}&to=${encodeURIComponent(win.to)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`source ${s.n}: ${res.status}`);
+  return await res.json();
+}
+
+/** Marks the ranked column in every table, header and cells alike. */
+function markSorted() {
+  const order = ["rating", "total", "period", "periodRating"];
+  const i = order.indexOf(sort);
+  for (const table of document.querySelectorAll("table")) {
+    for (const th of table.querySelectorAll("thead th")) th.classList.remove("on");
+    table.querySelector(`thead th.c-${sort}`)?.classList.add("on");
+    for (const tr of table.querySelectorAll("tbody tr")) {
+      for (const td of tr.cells) td.classList.remove("sorted");
+      // +2 for the rank and branch columns, which are never ranked by.
+      tr.cells[i + 2]?.classList.add("sorted");
+    }
+  }
+}
+
+function syncUrl() {
+  const u = new URL(location.href);
+  u.searchParams.set("sort", sort);
+  u.searchParams.set("p", periodKey);
+  if (periodKey === "custom") {
+    u.searchParams.set("from", d1.value);
+    u.searchParams.set("to", d2.value);
+  } else {
+    u.searchParams.delete("from");
+    u.searchParams.delete("to");
+  }
+  history.replaceState(null, "", u);
+}
+
+function markPeriod() {
+  for (const t of document.querySelectorAll(".tab")) {
+    t.classList.toggle("on", t.dataset.p === periodKey);
+  }
+  datesEl.hidden = periodKey !== "custom";
+}
+
+function draw(win) {
+  markPeriod();
+  chipsEl.innerHTML = renderChips(board);
+  mainEl.innerHTML = renderMain(board, sort, win.label);
+  asEl.textContent = `as of ${myt(board.generatedAt)}`;
+  markSorted();
+  syncUrl();
+}
+
+async function load() {
+  if (!SOURCES.length) {
+    mainEl.innerHTML = `<p class="msg bad">This link is missing its key.</p>`;
+    return;
+  }
+  const win = currentWindow();
+  const results = await Promise.allSettled(SOURCES.map((s) => fetchSource(s, win)));
+  const failed = results
+    .map((r, i) => r.status === "rejected" ? SOURCES[i].n : null)
+    .filter(Boolean);
+  board = mergeBoards(results.map((r) => r.status === "fulfilled" ? r.value : null));
+
+  if (!board) {
+    mainEl.innerHTML = `<p class="msg bad">Could not reach the data just now.</p>`;
+    return;
+  }
+  draw(win);
+  if (failed.length) {
+    mainEl.insertAdjacentHTML(
+      "afterbegin",
+      `<p class="msg bad">One group could not be reached \u2014 the rest is below.</p>`,
+    );
+  }
+}
+
+for (const t of document.querySelectorAll(".tab")) {
+  t.addEventListener("click", () => {
+    periodKey = t.dataset.p;
+    // Marked before the data arrives, so a press on a month of reviews is not ignored.
+    markPeriod();
+    load();
+  });
+}
+for (const el of [d1, d2]) el.addEventListener("change", load);
+
+// The headers are rendered with the board, so the listener lives on the container.
+mainEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".sb");
+  if (!btn || !board || !SORTS[btn.dataset.sort]) return;
+  sort = btn.dataset.sort;
+  draw(currentWindow());
+});
+
+load();
+// The data behind this moves every few minutes; a board left open should not go stale.
+setInterval(load, 300000);
+</script>
+</body>
+</html>
